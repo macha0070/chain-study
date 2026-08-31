@@ -33,6 +33,7 @@ import curve                                                      # noqa: E402
 import ecdsa                                                      # noqa: E402
 import hashing                                                    # noqa: E402
 import merkle                                                     # noqa: E402
+import payment                                                    # noqa: E402
 import scenario                                                   # noqa: E402
 from node import Network                                          # noqa: E402
 from tx import InvalidTx, Wallet, transfer                        # noqa: E402
@@ -76,6 +77,8 @@ class Lab:
                                hashrates=rates[:int(nodes)], seed=seed)
             for name in ("Alice", "Bob", "Merchant"):
                 self.net.wallet(name)
+            # 店は自分のノードを持つ。他人の「入金しました」を信じないため。
+            self.pos = payment.PaymentProcessor(self.net.nodes[0], "店舗")
             self.notes = []
             self.job = None
             self._note("reset", f"ノード {nodes} 台 / 難易度 {difficulty} / "
@@ -133,9 +136,11 @@ class Lab:
             for _ in range(count):
                 with self.lock:
                     self.net.mine_next()
+                    self.pos.poll(self.net.now)      # 注文の状態も進める
                 job["done"] += 1
             with self.lock:
                 self.net.settle()
+                self.pos.poll(self.net.now)
         return self.start(f"{count} ブロック採掘", run)
 
     def settle(self) -> dict:
@@ -313,6 +318,127 @@ class Lab:
                 self._note("attack", "遅延スイープ完了")
 
         return self.start("遅延スイープ", run)
+
+    # ------------------------------------------------------------ 決済（POS）
+
+    def pos_state(self) -> dict:
+        """レジ画面の状態。呼ぶたびにチェーンを見直して注文を更新する。"""
+        with self.lock:
+            self.pos.poll(self.net.now)
+            obs = self.observer()
+            utxos = obs.chain.utxos
+            invoices = [inv.view() for inv in self.pos.invoices.values()]
+            invoices.sort(key=lambda i: -i["id"])
+            return {
+                "now": round(self.net.now, 2),
+                "height": obs.chain.height() if obs.chain.tip else -1,
+                "invoices": invoices,
+                "released": sorted(self.pos.released),
+                "summary": self.pos.summary(),
+                "log": self.pos.log[-40:],
+                "customers": [
+                    {"name": w.name, "balance": w.balance(utxos)}
+                    for w in self.net.wallets.values()
+                ],
+                "policy_table": [
+                    {"amount": a, "required": z, "loss": round(loss, 4)}
+                    for a, z, loss in payment.confirmation_table(
+                        [1, 10, 50, 100, 500, 1000, 10000])
+                ],
+                "job": self.job,
+            }
+
+    def pos_create(self, amount: int, memo: str, attacker_share: float,
+                   tolerated_loss: float) -> dict:
+        with self.lock:
+            inv = self.pos.create_invoice(
+                amount=int(amount), memo=memo or "", now=self.net.now,
+                attacker_share=float(attacker_share),
+                tolerated_loss=float(tolerated_loss))
+            self._note("invoice", f"請求書 #{inv.id} {inv.amount} を発行")
+            return {"ok": True, "invoice": inv.view()}
+
+    def pos_pay(self, invoice_id: int, payer: str, amount: int | None) -> dict:
+        with self.lock:
+            inv = self.pos.invoices.get(int(invoice_id))
+            if inv is None:
+                return {"ok": False, "error": "その請求書はありません"}
+            wallet = self._find_wallet(payer)
+            if wallet is None:
+                return {"ok": False, "error": "ウォレットが見つかりません"}
+            try:
+                t = payment.pay_invoice(wallet, self.observer(), inv, self.net,
+                                        amount=amount)
+            except InvalidTx as e:
+                return {"ok": False, "error": str(e)}
+            self.pos.poll(self.net.now)
+            self._note("tx", f"{payer} が請求書 #{inv.id} に支払った")
+            return {"ok": True, "txid": t.txid().hex()}
+
+    def pos_release(self, invoice_id: int, force: bool) -> dict:
+        with self.lock:
+            self.pos.poll(self.net.now)
+            if int(invoice_id) not in self.pos.invoices:
+                return {"ok": False, "error": "その請求書はありません"}
+            ok, msg = self.pos.release(int(invoice_id), self.net.now, force=force)
+            return {"ok": ok, "message": msg}
+
+    def pos_attack(self, invoice_id: int, release_at: int = 1,
+                   lead: int = 2) -> dict:
+        """この請求書を狙って二重支払いする。
+
+        店が release_at 確認で商品を渡してしまう設定にしておき、
+        そのあと攻撃者が隠し枝を公開する。
+        「待つ長さを縮めると何が起きるか」をそのまま実演する。
+        """
+        def run(job):
+            job["total"] = release_at + lead + 8
+            with self.lock:
+                inv = self.pos.invoices[int(invoice_id)]
+                gen = scenario.double_spend(
+                    self.net, self.net.wallet("Alice"), inv.wallet,
+                    amount=inv.amount, confirmations=release_at, lead=lead)
+
+            while True:
+                with self.lock:
+                    try:
+                        step = next(gen)
+                    except StopIteration as stop:
+                        outcome = stop.value
+                        break
+                    # 1 ステップごとに店の判断も進める
+                    self.pos.poll(self.net.now)
+                    if (inv.confirmations >= release_at
+                            and inv.id not in self.pos.released
+                            and inv.status in (payment.CONFIRMING, payment.SETTLED)):
+                        self.pos.release(inv.id, self.net.now, force=True)
+                job["done"] += 1
+                job["step"] = step
+
+            with self.lock:
+                self.pos.poll(self.net.now)
+                view = inv.view()
+                lost = inv.id in self.pos.released and inv.status == payment.REVERSED
+                self.job["result"] = {
+                    "ok": True, "kind": "pos_double_spend",
+                    "rows": [
+                        ("請求書", f"#{inv.id}  {inv.amount}"),
+                        ("ポリシー上の必要確認数", str(inv.required)),
+                        ("店が渡した時点の確認数", str(release_at)),
+                        ("渡した時点の期待損失",
+                         f"{chainmod.attacker_success_probability(inv.attacker_share, release_at) * inv.amount:.2f}"),
+                        ("攻撃者の隠し枝", f"{outcome['hidden_blocks']} ブロック"),
+                        ("最終的な注文の状態", view["status"]),
+                        ("商品を渡したか", "はい" if inv.id in self.pos.released else "いいえ"),
+                        ("損失", str(inv.amount if lost else 0)),
+                    ],
+                    "verdict": ("成功（商品を渡したあとで支払いが消えた）" if lost
+                                else "失敗（注文は巻き戻らなかった）"),
+                    "note": "チェーンも署名も壊れていない。壊れたのは"
+                            "『何確認で渡すか』という店の判断のほう。",
+                }
+
+        return self.start(f"請求書 #{invoice_id} を狙った二重支払い", run)
 
     def confirmations_table(self) -> dict:
         """中本論文 11 節の式で、確認数ごとの逆転確率を出す。"""
@@ -505,10 +631,14 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if p == "/":
                 self._file("index.html")
+            elif p in ("/pos", "/pos/"):
+                self._file("pos.html")
             elif p.startswith("/static/"):
                 self._file(p[len("/static/"):])
             elif p == "/api/state":
                 self._json(LAB.snapshot())
+            elif p == "/api/pos/state":
+                self._json(LAB.pos_state())
             elif p == "/api/block":
                 self._json(LAB.block_detail(q.get("hash", [""])[0]))
             elif p == "/api/confirmations":
@@ -557,6 +687,23 @@ class Handler(BaseHTTPRequestHandler):
                     lead=int(body.get("lead", 2))))
             elif p == "/api/attack/latency_sweep":
                 self._json(LAB.latency_sweep())
+            elif p == "/api/pos/invoice":
+                self._json(LAB.pos_create(
+                    amount=body.get("amount", 10),
+                    memo=body.get("memo", ""),
+                    attacker_share=body.get("attacker_share", 0.10),
+                    tolerated_loss=body.get("tolerated_loss", 0.5)))
+            elif p == "/api/pos/pay":
+                self._json(LAB.pos_pay(body.get("invoice_id"),
+                                       body.get("from", "Alice"),
+                                       body.get("amount")))
+            elif p == "/api/pos/release":
+                self._json(LAB.pos_release(body.get("invoice_id"),
+                                           bool(body.get("force", False))))
+            elif p == "/api/pos/attack":
+                self._json(LAB.pos_attack(body.get("invoice_id"),
+                                          int(body.get("release_at", 1)),
+                                          int(body.get("lead", 2))))
             else:
                 self.send_error(404)
         except InvalidTx as e:

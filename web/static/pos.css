@@ -1,0 +1,145 @@
+/* 決済アプリ側の追加スタイル。共通部分は style.css を読んでいる。 */
+
+.navlinks a {
+  color: var(--info); text-decoration: none; font-size: 12px;
+  border: 1px solid var(--line); border-radius: 7px; padding: 6px 11px;
+  background: var(--panel);
+}
+.navlinks a:hover { background: var(--panel-2); }
+
+.banner {
+  margin: 0 14px; padding: 11px 14px;
+  background: var(--panel); border: 1px solid var(--line);
+  border-left: 3px solid var(--info);
+  border-radius: 8px; font-size: 12px; color: var(--dim); line-height: 1.65;
+}
+.banner b { color: var(--text); }
+.grid { padding-top: 14px; }
+
+/* ------------------------------------------------------------- 注文カード */
+
+.orders { display: flex; flex-direction: column; gap: 10px; }
+.orders .empty { color: var(--dimmer); text-align: center; padding: 34px 0; font-size: 13px; }
+
+.order {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--dimmer);
+  border-radius: 9px;
+  padding: 12px 14px;
+}
+.order.s-detected   { border-left-color: var(--warn); }
+.order.s-confirming { border-left-color: var(--info); }
+.order.s-settled    { border-left-color: var(--canon); }
+.order.s-underpaid  { border-left-color: var(--violet); }
+.order.s-reversed   { border-left-color: var(--danger); background: #21151a; }
+.order.s-expired    { opacity: .55; }
+
+.order-top {
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.order-id { font-family: var(--mono); font-size: 12px; color: var(--dim); }
+.order-amount { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.order-memo { color: var(--dim); font-size: 12.5px; flex: 1; }
+
+.badge {
+  font-size: 10.5px; font-weight: 700; letter-spacing: .03em;
+  padding: 2px 8px; border-radius: 5px; white-space: nowrap;
+}
+.badge.created    { background: #232c40; color: var(--dim); }
+.badge.detected   { background: rgba(240,182,78,.18); color: var(--warn); }
+.badge.confirming { background: rgba(106,166,255,.16); color: var(--info); }
+.badge.settled    { background: rgba(86,211,154,.18); color: var(--canon); }
+.badge.underpaid  { background: rgba(169,139,255,.18); color: var(--violet); }
+.badge.reversed   { background: rgba(255,107,107,.2); color: var(--danger); }
+.badge.expired    { background: #232c40; color: var(--dimmer); }
+
+.order-addr { font-family: var(--mono); font-size: 10.5px; color: var(--dimmer); }
+
+/* 確認の積み上がり */
+.confbar { display: flex; gap: 3px; margin: 9px 0 7px; }
+.confbar i {
+  flex: 1; height: 7px; border-radius: 2px; background: var(--line);
+}
+.confbar i.on   { background: var(--info); }
+.confbar i.done { background: var(--canon); }
+.confbar i.lost { background: var(--danger); }
+
+.order-metrics {
+  display: flex; flex-wrap: wrap; gap: 4px 18px;
+  font-size: 11.5px; color: var(--dim); margin-bottom: 9px;
+}
+.order-metrics b { color: var(--text); font-variant-numeric: tabular-nums; }
+.order-metrics .risk-high b { color: var(--danger); }
+.order-metrics .risk-mid  b { color: var(--warn); }
+.order-metrics .risk-low  b { color: var(--canon); }
+
+.order-actions { display: flex; gap: 7px; flex-wrap: wrap; }
+.order-actions button { font-size: 11.5px; padding: 5px 11px; }
+.order-actions .released {
+  font-size: 11.5px; color: var(--canon); align-self: center;
+}
+.order-actions .lost {
+  font-size: 11.5px; color: var(--danger); font-weight: 600; align-self: center;
+}
+
+.order-history {
+  margin-top: 9px; padding-top: 8px; border-top: 1px solid var(--line-soft);
+  font-family: var(--mono); font-size: 10.5px; color: var(--dimmer);
+  display: flex; flex-direction: column; gap: 1px;
+}
+.order-history .now { color: var(--text); }
+
+/* ------------------------------------------------------------- 集計 */
+
+.summary { display: flex; gap: 14px; font-size: 11.5px; color: var(--dim); }
+.summary b { color: var(--text); font-variant-numeric: tabular-nums; }
+.summary .bad b { color: var(--danger); }
+
+/* ------------------------------------------------------------- ポリシー表 */
+
+.policy-preview {
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 8px; padding: 9px 11px; margin: 10px 0;
+  font-size: 12px; color: var(--dim);
+}
+.policy-preview b { color: var(--canon); font-size: 15px; }
+
+table.policy { width: 100%; border-collapse: collapse; font-size: 11px; }
+table.policy th {
+  color: var(--dim); font-weight: 500; text-align: right; padding: 3px 5px;
+  border-bottom: 1px solid var(--line-soft);
+}
+table.policy td {
+  text-align: right; padding: 3px 5px; font-family: var(--mono);
+  color: var(--text);
+}
+table.policy tr.here td { color: var(--canon); font-weight: 600; }
+
+/* ------------------------------------------------------------- 客 */
+
+.customers { display: flex; flex-direction: column; gap: 5px; margin-bottom: 4px; }
+.customer {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 9px; background: var(--panel-2);
+  border: 1px solid var(--line-soft); border-radius: 7px; font-size: 12px;
+}
+.customer b { font-family: var(--mono); color: var(--canon); }
+.customer.zero b { color: var(--dimmer); }
+
+/* ------------------------------------------------------------- 凡例 */
+
+.legend-list { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 5px 10px; }
+.legend-list dt { }
+.legend-list dd { margin: 0; font-size: 11.5px; color: var(--dim); line-height: 1.5; }
+.legend-list dd b { color: var(--text); }
+
+.log .k-settled b, .log .k-settled .m { color: var(--canon); }
+.log .k-reversed .m { color: var(--danger); font-weight: 600; }
+.log .k-risky .m { color: var(--warn); font-weight: 600; }
+.log .k-loss .m { color: var(--danger); font-weight: 600; }
+.log .k-invoice .m { color: var(--info); }
+.log .k-release .m { color: var(--canon); }
+.log .k-detected .m { color: var(--warn); }
+.log .k-confirming .m { color: var(--info); }

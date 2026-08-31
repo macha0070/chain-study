@@ -20,6 +20,12 @@ import urllib.request
 BASE = "http://127.0.0.1:8000"
 FAILURES: list[str] = []
 
+# Windows で出力をパイプすると locale (cp932) が使われて日本語が壊れる。
+# CI は Linux なので問題ないが、CONTRIBUTING.md は手元で実行するよう言っている。
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+
 
 def post(path: str, body: dict | None = None) -> dict:
     req = urllib.request.Request(
@@ -44,6 +50,13 @@ def wait_for_job(timeout: float = 180.0) -> dict:
             return state
         time.sleep(0.4)
     raise TimeoutError("ジョブが終わりませんでした")
+
+
+def _find_order(invoice_id: int) -> dict:
+    for inv in get("/api/pos/state")["invoices"]:
+        if inv["id"] == invoice_id:
+            return inv
+    raise KeyError(f"請求書 #{invoice_id} が見つかりません")
 
 
 def check(label: str, ok: bool, detail: str = "") -> None:
@@ -102,6 +115,66 @@ def main() -> int:
         check("孤児ブロックが生まれた",
               state["stats"]["orphans"] > before["stats"]["orphans"],
               f"{state['stats']['orphans']} 個")
+
+    print("\n5. 決済アプリ — 0 確認では渡せず、待てば確定する")
+    post("/api/reset", {"nodes": 4, "difficulty": 12, "latency": 4, "interval": 30})
+    post("/api/mine", {"count": 10})
+    wait_for_job()
+    faucet = post("/api/faucet", {"wallet": "Alice", "amount": 100})
+    check("Alice に元手を配れた", faucet.get("ok", False), faucet.get("error", ""))
+    post("/api/mine", {"count": 2})
+    wait_for_job()
+
+    created = post("/api/pos/invoice", {"amount": 40, "memo": "CI テスト"})
+    invoice_id = created["invoice"]["id"]
+    required = created["invoice"]["required"]
+    check("請求書が 1 確認以上を要求する", required >= 1, f"{required} 確認")
+
+    paid = post("/api/pos/pay", {"invoice_id": invoice_id, "from": "Alice"})
+    check("支払いを投入できた", paid.get("ok", False), paid.get("error", ""))
+
+    order = _find_order(invoice_id)
+    check("0 確認では safe にならない",
+          order["status"] == "detected" and not order["safe"],
+          f"{order['status']} / safe={order['safe']}")
+    check("0 確認の期待損失は全額",
+          abs(order["expected_loss"] - order["amount"]) < 1e-6,
+          f"{order['expected_loss']}")
+
+    denied = post("/api/pos/release", {"invoice_id": invoice_id})
+    check("0 確認での引き渡しは拒否される", not denied.get("ok", True),
+          denied.get("message", ""))
+
+    losses = []
+    for _ in range(required + 4):
+        post("/api/mine", {"count": 1})
+        wait_for_job()
+        order = _find_order(invoice_id)
+        losses.append(order["expected_loss"])
+        if order["safe"]:
+            break
+    check("待てば settled になる", order["status"] == "settled",
+          f"{order['status']} / {order['confirmations']}確認")
+    check("期待損失は単調に下がる", losses == sorted(losses, reverse=True),
+          " → ".join(f"{v:.2f}" for v in losses))
+    released = post("/api/pos/release", {"invoice_id": invoice_id})
+    check("settled なら引き渡せる", released.get("ok", False),
+          released.get("message", ""))
+
+    print("\n6. 待たずに渡すと、実際に商品を失う")
+    inv2 = post("/api/pos/invoice", {"amount": 60, "memo": "CI 攻撃対象"})
+    id2 = inv2["invoice"]["id"]
+    post("/api/pos/attack", {"invoice_id": id2, "release_at": 1, "lead": 2})
+    state = wait_for_job()
+    if state["job"].get("error"):
+        check("攻撃が完走した", False, state["job"]["error"])
+    else:
+        order2 = _find_order(id2)
+        summary = get("/api/pos/state")["summary"]
+        check("1 確認で渡した注文が巻き戻った", order2["status"] == "reversed",
+              order2["status"])
+        check("損失が記録されている", summary["reversed_after_release"] >= 1,
+              f"損失 {summary['lost_amount']}")
 
     print()
     if FAILURES:

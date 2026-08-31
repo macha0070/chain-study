@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>chain-study pay — 決済アプリ</title>
+<link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="/static/pos.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">🧾</span>
+    <div>
+      <h1>chain-study pay</h1>
+      <p>確率的な合意の上に商売を載せる — いつ商品を渡してよいか</p>
+    </div>
+  </div>
+  <div class="stats" id="stats"></div>
+  <nav class="navlinks">
+    <a href="/">チェーンの中身を見る →</a>
+  </nav>
+</header>
+
+<div class="banner">
+  <b>この画面が答えようとしている問い:</b>
+  tx が有効であることと、商品を渡してよいことは別。
+  ブロックチェーンに「確定」はなく、あるのは<b>覆すのに必要な費用</b>だけ。
+  だから決済システムは必ずどこかで「どこまで待つか」を決めなければならない。
+  これは暗号の問題ではなく経営判断で、ここではそれを式にしてある。
+</div>
+
+<main class="grid">
+
+  <!-- ---------------------------------------------------------- 左: レジ -->
+  <aside class="col col-left">
+    <section class="panel">
+      <h2>レジ</h2>
+      <label class="field"><span>金額</span>
+        <input type="number" id="amount" min="1" value="40"></label>
+      <label class="field"><span>品目</span>
+        <input type="text" id="memo" value="ドリップコーヒー"></label>
+      <button class="primary wide" id="issue">請求書を発行</button>
+      <p class="hint">請求書ごとに<strong>新しいアドレス</strong>を発行する。
+        使い回すと、誰がどの請求に払ったのかチェーンから判別できない。</p>
+    </section>
+
+    <section class="panel">
+      <h2>確認数ポリシー</h2>
+      <p class="hint">期待損失 = P(攻撃者が z 確認を覆す確率) × 金額。
+        これを許容額以下に抑える最小の z を待つ。</p>
+      <label class="slider">
+        <span>想定する攻撃者のハッシュ力 <b id="q-val">10%</b></span>
+        <input type="range" id="attacker" min="1" max="45" step="1" value="10">
+      </label>
+      <label class="slider">
+        <span>許容する期待損失 <b id="loss-val">0.5</b></span>
+        <input type="range" id="tolerated" min="0.05" max="5" step="0.05" value="0.5">
+      </label>
+      <div id="policy-preview" class="policy-preview"></div>
+      <table class="policy" id="policy-table"></table>
+      <p class="hint">z = 0 は絶対に選ばれない。P(q, 0) = 1 なので、
+        どんなに小さい額でも期待損失は全額になる。
+        <strong>「0 確認で渡してよい額」は原理的に存在しない。</strong></p>
+    </section>
+
+    <section class="panel">
+      <h2>客のウォレット</h2>
+      <div id="customers" class="customers"></div>
+      <button class="ghost wide" id="faucet">Alice に 100 配る</button>
+      <p class="hint">残高が足りないときは、先に採掘して配ってください。</p>
+    </section>
+  </aside>
+
+  <!-- ---------------------------------------------------------- 中央: 注文 -->
+  <section class="col col-center">
+    <section class="panel">
+      <div class="panel-head">
+        <h2>注文</h2>
+        <div id="summary" class="summary"></div>
+      </div>
+      <div id="orders" class="orders">
+        <div class="empty">まだ請求書がありません</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>決済ログ</h2>
+      <div id="log" class="log"></div>
+    </section>
+  </section>
+
+  <!-- ---------------------------------------------------------- 右: チェーン -->
+  <aside class="col col-right">
+    <section class="panel">
+      <h2>チェーンを進める</h2>
+      <p class="hint">確認が積まれるのは、ブロックが掘られたときだけ。</p>
+      <div class="row">
+        <button class="primary" data-mine="1">1 ブロック</button>
+        <button data-mine="3">3</button>
+        <button data-mine="10">10</button>
+      </div>
+      <div id="job" class="job" hidden></div>
+    </section>
+
+    <section class="panel">
+      <h2>攻撃を仕掛ける</h2>
+      <p class="hint">店が <b id="release-val">1</b> 確認で商品を渡してしまう設定にして、
+        そのあと攻撃者が隠し枝を公開する。</p>
+      <label class="slider">
+        <span>店が渡してしまう確認数</span>
+        <input type="range" id="release-at" min="0" max="6" step="1" value="1">
+      </label>
+      <select id="attack-target"></select>
+      <button class="attack wide" id="attack">
+        <b>この注文を二重支払いする</b>
+        <span>商品を渡したあとで支払いを消す</span></button>
+      <div id="attack-result"></div>
+    </section>
+
+    <section class="panel">
+      <h2>状態の意味</h2>
+      <dl class="legend-list">
+        <dt><span class="badge created">created</span></dt>
+        <dd>発行しただけ。まだ何も届いていない</dd>
+        <dt><span class="badge detected">detected</span></dt>
+        <dd>mempool で見えた。<b>0 確認。絶対に渡してはいけない</b></dd>
+        <dt><span class="badge confirming">confirming</span></dt>
+        <dd>ブロックに入った。まだ必要数に足りない</dd>
+        <dt><span class="badge settled">settled</span></dt>
+        <dd>必要確認数に到達。渡してよい</dd>
+        <dt><span class="badge underpaid">underpaid</span></dt>
+        <dd>届いた額が足りない</dd>
+        <dt><span class="badge reversed">reversed</span></dt>
+        <dd>確定後にリオーグで消えた。<b>この方式に固有の状態</b></dd>
+      </dl>
+      <p class="hint">クレジットカードのチャージバックと違い、リオーグは
+        誰の意思でもない。交渉相手がいないので事後に取り返す手段がなく、
+        事前に「何確認待つか」でしか制御できない。</p>
+    </section>
+  </aside>
+</main>
+
+<script src="/static/pos.js"></script>
+</body>
+</html>

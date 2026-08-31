@@ -288,6 +288,97 @@ def figure_confirmations(path: str) -> None:
     _write(path, svg)
 
 
+# ---------------------------------------------------------------- 図 4: 決済の状態
+
+def figure_payment_states(path: str) -> None:
+    """請求書の状態遷移。reversed の存在がこの方式の要点。
+
+    これだけは実測ではなく構造の図。ただし状態名と遷移条件は
+    chain/payment.py の実装から直接持ってきている。
+    """
+    BW, BH = 132, 46
+    X0, ROW1, ROW2 = 26, 92, 196
+
+    main = [("created", "発行しただけ", CANON_FILL, DIM),
+            ("detected", "mempool で発見", "#3a2c14", WARN),
+            ("confirming", "ブロックに入った", "#152a44", "#6aa6ff"),
+            ("settled", "必要確認数に到達", CANON_FILL, CANON)]
+    side = [("expired", 0, "期限切れ", "#1c2233", DIM),
+            ("underpaid", 2, "金額が足りない", "#241c3a", "#a98bff"),
+            ("reversed", 3, "リオーグで消えた", ORPHAN_FILL, ORPHAN)]
+
+    def bx(i):
+        return X0 + i * (BW + 38)
+
+    parts = []
+
+    # 本線の矢印
+    for i in range(len(main) - 1):
+        x1, x2 = bx(i) + BW, bx(i + 1)
+        y = ROW1 + BH / 2
+        parts.append(f'<path d="M{x1},{y} L{x2 - 7},{y}" stroke="{LINE}" '
+                     f'stroke-width="2" fill="none"/>')
+        parts.append(f'<path d="M{x2 - 8},{y - 4} L{x2},{y} L{x2 - 8},{y + 4} Z" '
+                     f'fill="{LINE}"/>')
+
+    # 下段への矢印
+    for name, i, _, _, _ in side:
+        x = bx(i) + BW / 2
+        parts.append(f'<path d="M{x},{ROW1 + BH} L{x},{ROW2 - 8}" stroke="{LINE}" '
+                     f'stroke-width="2" fill="none" stroke-dasharray="4 3"/>')
+        parts.append(f'<path d="M{x - 4},{ROW2 - 9} L{x},{ROW2} L{x + 4},{ROW2 - 9} Z" '
+                     f'fill="{LINE}"/>')
+    # confirming からも reversed へ落ちる
+    xa, xb = bx(2) + BW / 2 + 26, bx(3) + BW / 2 - 26
+    parts.append(f'<path d="M{xa},{ROW1 + BH + 6} C{xa + 30},{ROW2 - 20} '
+                 f'{xb - 30},{ROW2 - 20} {xb},{ROW2 - 6}" stroke="{ORPHAN}" '
+                 f'stroke-opacity="0.5" stroke-width="1.6" fill="none" '
+                 f'stroke-dasharray="4 3"/>')
+
+    def box(x, y, name, sub, fill, edge, emphasize=False):
+        out = [f'<rect x="{x}" y="{y}" width="{BW}" height="{BH}" rx="9" '
+               f'fill="{fill}" stroke="{edge}" '
+               f'stroke-width="{2.4 if emphasize else 1.3}"/>',
+               text(x + BW / 2, y + 20, name, fill=edge, size=12.5,
+                    family=MONO, anchor="middle", weight="600"),
+               text(x + BW / 2, y + 35, sub, fill=DIM, size=10, anchor="middle")]
+        return out
+
+    for i, (name, sub, fill, edge) in enumerate(main):
+        parts += box(bx(i), ROW1, name, sub, fill, edge,
+                     emphasize=(name == "settled"))
+    for name, i, sub, fill, edge in side:
+        parts += box(bx(i), ROW2, name, sub, fill, edge,
+                     emphasize=(name == "reversed"))
+
+    # 注釈
+    parts.append(text(bx(1) + BW / 2, ROW1 - 12, "0 確認 — 渡してはいけない",
+                      fill=WARN, size=10.5, anchor="middle"))
+    parts.append(text(bx(3) + BW / 2, ROW1 - 12, "ここで渡す",
+                      fill=CANON, size=10.5, anchor="middle", weight="600"))
+    parts.append(text(bx(3) + BW + 14, ROW2 + 20,
+                      "この方式に固有の状態。", fill=ORPHAN, size=10.5))
+    parts.append(text(bx(3) + BW + 14, ROW2 + 35,
+                      "誰の意思でもなく起きるので、", fill=DIM, size=10.5))
+    parts.append(text(bx(3) + BW + 14, ROW2 + 49,
+                      "事後に取り返す手段がない。", fill=DIM, size=10.5))
+
+    width = bx(3) + BW + 210
+    height = ROW2 + BH + 66
+    note_y = height - 20
+    parts.append(f'<line x1="26" y1="{note_y - 20}" x2="{width - 26}" '
+                 f'y2="{note_y - 20}" stroke="{LINE}"/>')
+    parts.append(text(26, note_y - 2,
+                      "確認が積まれるほど期待損失（= 覆される確率 × 金額）が下がる。"
+                      "どこで止めるかを決めるのが決済システムの仕事",
+                      fill=DIM, size=11))
+
+    svg = frame(width, height, "\n".join(parts),
+                "請求書の状態 — いつ商品を渡してよいか",
+                "chain/payment.py の実装そのまま。settled 以外では引き渡せない")
+    _write(path, svg)
+
+
 # ---------------------------------------------------------------- 出力
 
 def _write(path: str, svg: str) -> None:
@@ -315,6 +406,7 @@ def main() -> None:
     print(f"    → 孤児率 {rows[0][1]:.1%}（遅延 0）から "
           f"{rows[-1][1]:.1%}（遅延 = ブロック間隔）まで")
     figure_confirmations(os.path.join(out, "confirmations.svg"))
+    figure_payment_states(os.path.join(out, "payment-states.svg"))
     print("完了。")
 
 

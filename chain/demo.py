@@ -25,6 +25,7 @@ import block
 import chain
 import node
 import scenario
+import payment
 
 
 PHASES = [
@@ -37,6 +38,7 @@ PHASES = [
     ("Phase 7  合意 — 最長鎖と、確定が確率でしかないこと", chain),
     ("Phase 8  P2P — 遅延がある限り、分岐は通常運転", node),
     ("シナリオ  51% 攻撃を頭から流す", scenario),
+    ("決済      確率的な合意の上で、いつ商品を渡すか", payment),
 ]
 
 

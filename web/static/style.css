@@ -325,3 +325,12 @@ table.conf { width: 100%; border-collapse: collapse; font-size: 10.5px; margin-t
 table.conf th, table.conf td { padding: 3px 4px; text-align: right; font-family: var(--mono); }
 table.conf th { color: var(--dim); font-weight: 500; }
 table.conf td { color: var(--text); border-radius: 3px; }
+
+/* ------------------------------------------------------------- ページ間リンク */
+
+.navlinks a {
+  color: var(--info); text-decoration: none; font-size: 12px;
+  border: 1px solid var(--line); border-radius: 7px; padding: 6px 11px;
+  background: var(--panel);
+}
+.navlinks a:hover { background: var(--panel-2); }

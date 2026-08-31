@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="878" height="308" viewBox="0 0 878 308" role="img" aria-label="請求書の状態 — いつ商品を渡してよいか">
+<rect width="878" height="308" rx="12" fill="#0f1420"/>
+<text x="22" y="30" fill="#e7edf7" font-size="15" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" text-anchor="start" font-weight="600">請求書の状態 — いつ商品を渡してよいか</text>
+<text x="22" y="50" fill="#8794ab" font-size="11.5" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" text-anchor="start" font-weight="normal">chain/payment.py の実装そのまま。settled 以外では引き渡せない</text>
+<path d="M158,115.0 L189,115.0" stroke="#2a3550" stroke-width="2" fill="none"/>
+<path d="M188,111.0 L196,115.0 L188,119.0 Z" fill="#2a3550"/>
+<path d="M328,115.0 L359,115.0" stroke="#2a3550" stroke-width="2" fill="none"/>
+<path d="M358,111.0 L366,115.0 L358,119.0 Z" fill="#2a3550"/>
+<path d="M498,115.0 L529,115.0" stroke="#2a3550" stroke-width="2" fill="none"/>
+<path d="M528,111.0 L536,115.0 L528,119.0 Z" fill="#2a3550"/>
+<path d="M92.0,138 L92.0,188" stroke="#2a3550" stroke-width="2" fill="none" stroke-dasharray="4 3"/>
+<path d="M88.0,187 L92.0,196 L96.0,187 Z" fill="#2a3550"/>
+<path d="M432.0,138 L432.0,188" stroke="#2a3550" stroke-width="2" fill="none" stroke-dasharray="4 3"/>
+<path d="M428.0,187 L432.0,196 L436.0,187 Z" fill="#2a3550"/>
+<path d="M602.0,138 L602.0,188" stroke="#2a3550" stroke-width="2" fill="none" stroke-dasharray="4 3"/>
+<path d="M598.0,187 L602.0,196 L606.0,187 Z" fill="#2a3550"/>
+<path d="M458.0,144 C488.0,176 546.0,176 576.0,190" stroke="#ff6b6b" stroke-opacity="0.5" stroke-width="1.6" fill="none" stroke-dasharray="4 3"/>
+<rect x="26" y="92" width="132" height="46" rx="9" fill="#17352a" stroke="#8794ab" stroke-width="1.3"/>
+<text x="92.0" y="112" fill="#8794ab" font-size="12.5" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" font-weight="600">created</text>
+<text x="92.0" y="127" fill="#8794ab" font-size="10" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" text-anchor="middle" font-weight="normal">発行しただけ</text>
+<rect x="196" y="92" width="132" height="46" rx="9" fill="#3a2c14" stroke="#f0b64e" stroke-width="1.3"/>
+<text x="262.0" y="112" fill="#f0b64e" font-size="12.5" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" font-weight="600">detected</text>
+<text x="262.0" y="127" fill="#8794ab" font-size="10" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" text-anchor="middle" font-weight="normal">mempool で発見</text>
+<rect x="366" y="92" width="132" height="46" rx="9" fill="#152a44" stroke="#6aa6ff" stroke-width="1.3"/>
+<text x="432.0" y="112" fill="#6aa6ff" font-size="12.5" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" font-weight="600">confirming</text>
+<text x="432.0" y="127" fill="#8794ab" font-size="10" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" text-anchor="middle" font-weight="normal">ブロックに入った</text>
+<rect x="536" y="92" width="132" height="46" rx="9" fill="#17352a" stroke="#56d39a" stroke-width="2.4"/>
+<text x="602.0" y="112" fill="#56d39a" font-size="12.5" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" font-weight="600">settled</text>
+<text x="602.0" y="127" fill="#8794ab" font-size="10" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" text-anchor="middle" font-weight="normal">必要確認数に到達</text>
+<rect x="26" y="196" width="132" height="46" rx="9" fill="#1c2233" stroke="#8794ab" stroke-width="1.3"/>
+<text x="92.0" y="216" fill="#8794ab" font-size="12.5" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" font-weight="600">expired</text>
+<text x="92.0" y="231" fill="#8794ab" font-size="10" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" text-anchor="middle" font-weight="normal">期限切れ</text>
+<rect x="366" y="196" width="132" height="46" rx="9" fill="#241c3a" stroke="#a98bff" stroke-width="1.3"/>
+<text x="432.0" y="216" fill="#a98bff" font-size="12.5" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" font-weight="600">underpaid</text>
+<text x="432.0" y="231" fill="#8794ab" font-size="10" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" text-anchor="middle" font-weight="normal">金額が足りない</text>
+<rect x="536" y="196" width="132" height="46" rx="9" fill="#2b1a1f" stroke="#ff6b6b" stroke-width="2.4"/>
+<text x="602.0" y="216" fill="#ff6b6b" font-size="12.5" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" font-weight="600">reversed</text>
+<text x="602.0" y="231" fill="#8794ab" font-size="10" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" text-anchor="middle" font-weight="normal">リオーグで消えた</text>
+<text x="262.0" y="80" fill="#f0b64e" font-size="10.5" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" text-anchor="middle" font-weight="normal">0 確認 — 渡してはいけない</text>
+<text x="602.0" y="80" fill="#56d39a" font-size="10.5" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" text-anchor="middle" font-weight="600">ここで渡す</text>
+<text x="682" y="216" fill="#ff6b6b" font-size="10.5" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" text-anchor="start" font-weight="normal">この方式に固有の状態。</text>
+<text x="682" y="231" fill="#8794ab" font-size="10.5" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" text-anchor="start" font-weight="normal">誰の意思でもなく起きるので、</text>
+<text x="682" y="245" fill="#8794ab" font-size="10.5" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" text-anchor="start" font-weight="normal">事後に取り返す手段がない。</text>
+<line x1="26" y1="268" x2="852" y2="268" stroke="#2a3550"/>
+<text x="26" y="286" fill="#8794ab" font-size="11" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" text-anchor="start" font-weight="normal">確認が積まれるほど期待損失（= 覆される確率 × 金額）が下がる。どこで止めるかを決めるのが決済システムの仕事</text>
+</svg>
