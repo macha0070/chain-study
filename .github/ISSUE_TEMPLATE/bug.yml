@@ -1,0 +1,32 @@
+name: 動かない / 結果がおかしい
+description: 実行できない、または出力が説明と食い違う
+labels: ["bug"]
+body:
+  - type: textarea
+    id: command
+    attributes:
+      label: 実行したコマンド
+      render: shell
+      placeholder: python chain/demo.py
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 実際の出力
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待した出力
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: 環境
+      placeholder: "Windows 11 / Python 3.13.1  もしくは  docker compose up"
+    validations:
+      required: true

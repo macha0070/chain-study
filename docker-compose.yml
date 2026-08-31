@@ -1,0 +1,30 @@
+services:
+  lab:
+    build: .
+    image: chain-study:latest
+    container_name: chain-study-lab
+    ports:
+      - "${PORT:-8000}:8000"
+    environment:
+      PORT: 8000
+    restart: unless-stopped
+    # ソースを差し替えたら再起動だけで反映される（教材として触りやすくする）
+    volumes:
+      - ./chain:/app/chain:ro
+      - ./web:/app/web:ro
+
+  # 使い方: docker compose run --rm tests
+  tests:
+    build: .
+    image: chain-study:latest
+    profiles: ["tools"]
+    environment:
+      CHAIN_STUDY_FAST: "0"     # 時間のかかる統計テストも走らせる
+    command: ["python", "-m", "unittest", "discover", "-s", "tests", "-v"]
+
+  # 使い方: docker compose run --rm demo
+  demo:
+    build: .
+    image: chain-study:latest
+    profiles: ["tools"]
+    command: ["python", "chain/demo.py"]

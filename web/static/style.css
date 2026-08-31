@@ -1,0 +1,327 @@
+/* chain-study lab — 計測器のような見た目にする。
+   装飾より「いま何が起きているか」が一目で分かることを優先。 */
+
+:root {
+  --bg:        #0a0d14;
+  --panel:     #121826;
+  --panel-2:   #1a2233;
+  --line:      #242e42;
+  --line-soft: #1b2333;
+  --text:      #e7edf7;
+  --dim:       #8794ab;
+  --dimmer:    #5c6880;
+
+  --canon:     #56d39a;   /* 正典チェーン */
+  --info:      #6aa6ff;   /* 情報・tip */
+  --warn:      #f0b64e;
+  --danger:    #ff6b6b;   /* 孤児・攻撃 */
+  --violet:    #a98bff;
+
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+          "Liberation Mono", monospace;
+  --radius: 10px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Sans",
+               "Noto Sans JP", sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* 計測器なので、画面に収めて各カラムを独立にスクロールさせる。
+   ページ全体を縦に伸ばすと、カラムの高さの差がそのまま黒い余白になる。 */
+body { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #26314a; border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: #33415f; }
+
+h1, h2, h3 { margin: 0; font-weight: 600; }
+
+/* ------------------------------------------------------------- ヘッダ */
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 22px;
+  background: linear-gradient(180deg, #121a2b, #0d121d);
+  border-bottom: 1px solid var(--line);
+}
+
+.brand { display: flex; align-items: center; gap: 14px; }
+.brand h1 { font-size: 17px; letter-spacing: .02em; }
+.brand p { margin: 2px 0 0; color: var(--dim); font-size: 12px; }
+.logo {
+  font-size: 22px;
+  width: 42px; height: 42px;
+  display: grid; place-items: center;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.stats { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 12px;
+  min-width: 84px;
+}
+.chip b { display: block; font-size: 16px; font-variant-numeric: tabular-nums; }
+.chip span { font-size: 11px; color: var(--dim); }
+.chip.good b { color: var(--canon); }
+.chip.bad  b { color: var(--danger); }
+
+/* ------------------------------------------------------------- レイアウト */
+
+.topbar { flex: 0 0 auto; }
+
+.grid {
+  display: grid;
+  grid-template-columns: 268px minmax(0, 1fr) 300px;
+  gap: 14px;
+  padding: 14px;
+  align-items: stretch;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+.col {
+  display: flex; flex-direction: column; gap: 14px;
+  min-width: 0; min-height: 0;
+  overflow-y: auto; overflow-x: hidden;
+  padding-right: 3px;
+}
+
+/* 狭い画面では 1 カラムに積み、ページ全体のスクロールに戻す */
+@media (max-width: 1180px) {
+  body { height: auto; overflow: visible; }
+  .grid { grid-template-columns: 1fr; overflow: visible; }
+  .col { height: auto; overflow: visible; }
+  .col-center { order: -1; }
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+.panel > h2 { font-size: 13px; letter-spacing: .04em; color: var(--text); }
+.panel-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px; gap: 10px;
+}
+.panel-head h2 { font-size: 13px; }
+
+.hint { margin: 6px 0 10px; color: var(--dim); font-size: 12px; line-height: 1.55; }
+.hint strong { color: var(--text); font-weight: 600; }
+
+/* ------------------------------------------------------------- ノード */
+
+.nodes { display: flex; flex-direction: column; gap: 8px; }
+.node {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--tipcolor, var(--dimmer));
+  border-radius: 8px;
+  padding: 9px 11px;
+}
+.node-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.node-name { font-weight: 600; font-size: 13px; }
+.node-tip {
+  font-family: var(--mono); font-size: 11px;
+  color: var(--tipcolor, var(--dim));
+}
+.node-meta {
+  display: flex; flex-wrap: wrap; gap: 4px 12px;
+  margin-top: 5px; font-size: 11px; color: var(--dim);
+}
+.node-meta b { color: var(--text); font-variant-numeric: tabular-nums; }
+.hashbar { height: 3px; background: var(--line); border-radius: 2px; margin-top: 7px; }
+.hashbar i { display: block; height: 100%; border-radius: 2px; background: var(--info); }
+
+/* ------------------------------------------------------------- ウォレット */
+
+.wallets { display: flex; flex-direction: column; gap: 5px; }
+.wallet {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 6px 9px;
+  background: var(--panel-2);
+  border: 1px solid var(--line-soft);
+  border-radius: 7px;
+}
+.wallet .w-name { font-size: 12px; font-weight: 600; }
+.wallet .w-addr { font-family: var(--mono); font-size: 10px; color: var(--dimmer); }
+.wallet .w-bal {
+  font-family: var(--mono); font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  color: var(--canon);
+}
+.wallet.zero .w-bal { color: var(--dimmer); }
+.wallet.miner { opacity: .78; }
+
+/* ------------------------------------------------------------- グラフ */
+
+.panel-graph { padding-bottom: 8px; }
+.legend { display: flex; gap: 12px; font-size: 11px; color: var(--dim); }
+.legend span { display: flex; align-items: center; gap: 5px; }
+.sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.sw-canon  { background: var(--canon); }
+.sw-orphan { background: var(--danger); opacity: .55; }
+.sw-tip    { background: transparent; border: 2px solid var(--info); }
+
+.graph { overflow-x: auto; overflow-y: hidden; padding-bottom: 6px; }
+.graph .empty { color: var(--dimmer); padding: 30px 0; text-align: center; font-size: 13px; }
+.graph svg { display: block; }
+
+.blk { cursor: pointer; }
+.blk rect { transition: filter .12s ease; }
+.blk:hover rect { filter: brightness(1.35); }
+.blk text { font-family: var(--mono); font-size: 10px; pointer-events: none; }
+
+/* ------------------------------------------------------------- 詳細 */
+
+#detail dl { display: grid; grid-template-columns: 128px minmax(0,1fr); gap: 3px 12px; margin: 0; }
+#detail dt { color: var(--dim); font-size: 12px; }
+#detail dd { margin: 0; font-family: var(--mono); font-size: 11.5px; word-break: break-all; }
+.txlist { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.txrow {
+  background: var(--panel-2); border: 1px solid var(--line-soft);
+  border-radius: 7px; padding: 7px 9px; font-size: 11.5px;
+}
+.txrow .txid { font-family: var(--mono); color: var(--info); font-size: 11px; }
+.txrow .io { color: var(--dim); font-family: var(--mono); font-size: 10.5px; margin-top: 3px; }
+.tag {
+  display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 4px;
+  background: var(--line); color: var(--dim); margin-left: 6px;
+}
+.tag.cb { background: rgba(240,182,78,.16); color: var(--warn); }
+
+/* ------------------------------------------------------------- ログ */
+
+/* 中央カラムの最後（ログ）は余りの高さを全部使う。
+   使わないと、カラムの高さの差がそのまま黒い余白になる。 */
+.col-center > .panel:last-child {
+  flex: 1 1 auto; display: flex; flex-direction: column; min-height: 150px;
+}
+.col-center > .panel:last-child .log { max-height: none; flex: 1 1 auto; }
+@media (max-width: 1180px) {
+  .col-center > .panel:last-child .log { max-height: 260px; }
+}
+
+.log {
+  max-height: 220px; overflow-y: auto;
+  font-family: var(--mono); font-size: 11.5px;
+  display: flex; flex-direction: column-reverse; gap: 2px;
+}
+.log div { display: flex; gap: 9px; padding: 1px 0; }
+.log .t { color: var(--dimmer); flex: 0 0 62px; text-align: right; }
+.log .m { color: var(--dim); }
+.log .k-block .m  { color: var(--text); }
+.log .k-reorg .m  { color: var(--warn); font-weight: 600; }
+.log .k-attack .m { color: var(--danger); font-weight: 600; }
+.log .k-tx .m     { color: var(--info); }
+
+/* ------------------------------------------------------------- 操作 */
+
+.row { display: flex; gap: 8px; align-items: end; margin-bottom: 8px; }
+.row > * { flex: 1; }
+.arrow { flex: 0 0 auto; color: var(--dim); padding-bottom: 7px; }
+
+button {
+  font: inherit; font-size: 12.5px;
+  padding: 7px 12px;
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background .12s ease, border-color .12s ease;
+}
+button:hover:not(:disabled) { background: #223049; border-color: #33415c; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+button.primary { background: #1d4d3a; border-color: #2a6b51; color: #c9f5e0; }
+button.primary:hover:not(:disabled) { background: #266349; }
+button.danger  { background: #4a1f24; border-color: #6b2c33; color: #ffd3d3; }
+button.ghost   { background: transparent; color: var(--dim); }
+button.wide    { width: 100%; margin-top: 6px; }
+
+button.attack {
+  display: block; text-align: left; margin-top: 7px;
+  border-color: #3a2430; background: #1c1420;
+}
+button.attack:hover:not(:disabled) { background: #2a1c2c; border-color: #55303f; }
+button.attack b { display: block; font-size: 12.5px; color: #ffb0b0; }
+button.attack span { display: block; font-size: 11px; color: var(--dim); }
+
+select, input[type="number"] {
+  font: inherit; font-size: 12.5px; width: 100%;
+  padding: 6px 8px;
+  background: var(--panel-2); color: var(--text);
+  border: 1px solid var(--line); border-radius: 7px;
+}
+.field { display: flex; flex-direction: column; gap: 3px; }
+.field span { font-size: 11px; color: var(--dim); }
+.field.tight { flex: 1; }
+
+.slider { display: block; margin-bottom: 10px; }
+.slider span { display: block; font-size: 12px; color: var(--dim); margin-bottom: 4px; }
+.slider b { color: var(--text); font-variant-numeric: tabular-nums; }
+input[type="range"] { width: 100%; accent-color: var(--info); }
+
+details { margin-top: 10px; border-top: 1px solid var(--line-soft); padding-top: 10px; }
+summary { cursor: pointer; font-size: 12px; color: var(--dim); }
+details > label { margin-top: 8px; }
+
+.job {
+  margin-top: 9px; font-size: 11.5px; color: var(--dim);
+}
+.job .bar { height: 4px; background: var(--line); border-radius: 2px; margin-top: 5px; }
+.job .bar i { display: block; height: 100%; background: var(--canon); border-radius: 2px;
+              transition: width .2s ease; }
+
+/* ------------------------------------------------------------- 攻撃結果 */
+
+#attack-result:not(:empty) {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px solid var(--line-soft);
+}
+.verdict {
+  display: inline-block; font-size: 11px; font-weight: 700;
+  padding: 2px 9px; border-radius: 5px; margin-bottom: 8px;
+}
+.verdict.ok   { background: rgba(255,107,107,.15); color: var(--danger); }
+.verdict.fail { background: rgba(86,211,154,.15); color: var(--canon); }
+
+.kv { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 2px 10px; font-size: 11px; }
+.kv dt { color: var(--dim); }
+.kv dd { margin: 0; font-family: var(--mono); font-size: 10.5px;
+         text-align: right; word-break: break-all; }
+.result-note {
+  margin-top: 9px; font-size: 11.5px; color: var(--dim);
+  border-left: 2px solid var(--line); padding-left: 9px; line-height: 1.55;
+}
+
+.sweep { margin-top: 10px; }
+.sweep .bar-row { display: flex; align-items: center; gap: 7px; font-size: 10.5px; margin-bottom: 3px; }
+.sweep .bar-label { flex: 0 0 42px; color: var(--dim); font-family: var(--mono); text-align: right; }
+.sweep .bar-track { flex: 1; height: 11px; background: var(--panel-2); border-radius: 3px; overflow: hidden; }
+.sweep .bar-fill { height: 100%; background: linear-gradient(90deg, var(--warn), var(--danger)); }
+.sweep .bar-val { flex: 0 0 42px; font-family: var(--mono); color: var(--text); }
+
+table.conf { width: 100%; border-collapse: collapse; font-size: 10.5px; margin-top: 8px; }
+table.conf th, table.conf td { padding: 3px 4px; text-align: right; font-family: var(--mono); }
+table.conf th { color: var(--dim); font-weight: 500; }
+table.conf td { color: var(--text); border-radius: 3px; }

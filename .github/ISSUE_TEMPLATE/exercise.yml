@@ -1,0 +1,35 @@
+name: 課題を解いた / 詰まった
+description: EXERCISES.md の課題についての報告
+labels: ["exercise"]
+body:
+  - type: dropdown
+    id: which
+    attributes:
+      label: どの課題ですか
+      options:
+        - 課題 1 RFC 6979（決定的 ECDSA）
+        - 課題 2 マークル木のドメイン分離
+        - 課題 3 難易度の自動調整
+        - 課題 4 タイムスタンプ検証
+        - 課題 5 SHA-256 を自作する
+        - 課題 6 Schnorr 署名
+        - 課題 7 以降（roadmap）
+    validations:
+      required: true
+  - type: dropdown
+    id: state
+    attributes:
+      label: 状態
+      options:
+        - テストが緑になった（解けた）
+        - テストが赤いまま
+        - そもそも何を作ればいいか分からない
+    validations:
+      required: true
+  - type: textarea
+    id: detail
+    attributes:
+      label: 詳しく
+      placeholder: |
+        テストの出力を貼ってもらえると早いです:
+        python -m unittest tests.test_exercises -v

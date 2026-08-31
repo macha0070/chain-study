@@ -1,0 +1,25 @@
+{
+  "name": "chain-study",
+  "image": "mcr.microsoft.com/devcontainers/python:3.13",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "forwardPorts": [8000],
+  "portsAttributes": {
+    "8000": { "label": "chain-study lab", "onAutoForward": "openBrowser" }
+  },
+  "postCreateCommand": "python chain/demo.py --check && python tools/progress.py",
+  "postAttachCommand": {
+    "lab": "nohup python web/server.py > /tmp/lab.log 2>&1 &"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python"],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "files.eol": "\n"
+      }
+    }
+  },
+  "remoteUser": "vscode"
+}

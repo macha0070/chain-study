@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>chain-study lab</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">⛓</span>
+    <div>
+      <h1>chain-study lab</h1>
+      <p>標準ライブラリだけで組んだブロックチェーンを、動かして観察する</p>
+    </div>
+  </div>
+  <div class="stats" id="stats"></div>
+</header>
+
+<main class="grid">
+
+  <!-- ---------------------------------------------------------- 左 -->
+  <aside class="col col-left">
+    <section class="panel">
+      <h2>ノード</h2>
+      <p class="hint">各ノードは<strong>自分が見たものしか知らない</strong>。
+         tip の色が割れていたら、その瞬間ネットワークは合意していない。</p>
+      <div id="nodes" class="nodes"></div>
+    </section>
+
+    <section class="panel">
+      <h2>ウォレット</h2>
+      <p class="hint">残高は保存されていない。観測ノードの UTXO 集合を数えた導出値。</p>
+      <div id="wallets" class="wallets"></div>
+    </section>
+  </aside>
+
+  <!-- ---------------------------------------------------------- 中央 -->
+  <section class="col col-center">
+    <section class="panel panel-graph">
+      <div class="panel-head">
+        <h2>チェーン</h2>
+        <div class="legend">
+          <span><i class="sw sw-canon"></i>正典</span>
+          <span><i class="sw sw-orphan"></i>孤児</span>
+          <span><i class="sw sw-tip"></i>tip</span>
+        </div>
+      </div>
+      <div id="graph" class="graph"><div class="empty">まだブロックがありません</div></div>
+    </section>
+
+    <section class="panel" id="detail-panel" hidden>
+      <div class="panel-head">
+        <h2>ブロック詳細</h2>
+        <button class="ghost" id="detail-close">閉じる</button>
+      </div>
+      <div id="detail"></div>
+    </section>
+
+    <section class="panel">
+      <h2>イベントログ</h2>
+      <div id="log" class="log"></div>
+    </section>
+  </section>
+
+  <!-- ---------------------------------------------------------- 右 -->
+  <aside class="col col-right">
+    <section class="panel">
+      <h2>採掘</h2>
+      <div class="row">
+        <button class="primary" data-mine="1">1 ブロック</button>
+        <button data-mine="5">5</button>
+        <button data-mine="20">20</button>
+      </div>
+      <div id="job" class="job" hidden></div>
+      <button class="ghost wide" id="settle">キューを配送し切る</button>
+    </section>
+
+    <section class="panel">
+      <h2>ネットワーク設定</h2>
+      <label class="slider">
+        <span>伝播遅延 <b id="lat-val">4.0</b> 秒</span>
+        <input type="range" id="latency" min="0" max="30" step="0.5" value="4">
+      </label>
+      <label class="slider">
+        <span>ブロック間隔 <b id="int-val">30</b> 秒</span>
+        <input type="range" id="interval" min="5" max="120" step="5" value="30">
+      </label>
+      <p class="hint" id="ratio-hint"></p>
+      <details>
+        <summary>チェーンを作り直す</summary>
+        <label class="field"><span>ノード数</span>
+          <input type="number" id="nodes-n" min="2" max="8" value="4"></label>
+        <label class="field"><span>難易度 (先頭 0 ビット)</span>
+          <input type="number" id="diff-n" min="8" max="20" value="14"></label>
+        <button class="danger wide" id="reset">リセット</button>
+      </details>
+    </section>
+
+    <section class="panel">
+      <h2>送金</h2>
+      <div class="row">
+        <select id="send-from"></select>
+        <span class="arrow">→</span>
+        <select id="send-to"></select>
+      </div>
+      <div class="row">
+        <label class="field tight"><span>額</span>
+          <input type="number" id="send-amount" min="1" value="10"></label>
+        <label class="field tight"><span>手数料</span>
+          <input type="number" id="send-fee" min="0" value="1"></label>
+      </div>
+      <button class="primary wide" id="send">mempool へ投入</button>
+      <button class="ghost wide" id="faucet">Alice に 50 配る</button>
+      <p class="hint">投入しただけでは確定しない。誰かが採掘して初めて残高が動く。</p>
+    </section>
+
+    <section class="panel">
+      <h2>攻撃を実行する</h2>
+      <p class="hint">対策は入れていない。壊れる様子を先に見るため。</p>
+      <button class="attack wide" data-attack="nonce_reuse">
+        <b>nonce 再利用</b><span>署名 2 本から秘密鍵を復元する</span></button>
+      <button class="attack wide" data-attack="merkle_cve">
+        <b>CVE-2012-2459</b><span>違う tx リストに同じマークル根を作る</span></button>
+      <button class="attack wide" data-attack="double_spend">
+        <b>二重支払い (51%)</b><span>確認済みの支払いをリオーグで消す</span></button>
+      <button class="attack wide" data-attack="latency_sweep">
+        <b>遅延スイープ</b><span>伝播遅延と孤児率の関係を測る</span></button>
+      <button class="attack wide" data-attack="confirmations">
+        <b>確認数の計算</b><span>中本論文 11 節の逆転確率</span></button>
+      <div id="attack-result"></div>
+    </section>
+  </aside>
+</main>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+# 改行は LF に統一する。Windows で書いて Linux コンテナで動かすため。
+* text=auto eol=lf
+*.py    text eol=lf
+*.md    text eol=lf
+*.yml   text eol=lf
+*.json  text eol=lf
+*.html  text eol=lf
+*.css   text eol=lf
+*.js    text eol=lf
+Dockerfile text eol=lf
+*.svg   text eol=lf

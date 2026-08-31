@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 課題の一覧
+    url: https://github.com/macha0070/chain-study/blob/main/EXERCISES.md
+    about: 手を動かす課題はここに。関数名とシグネチャが決めてあります。
+  - name: ロードマップ
+    url: https://github.com/macha0070/chain-study/blob/main/docs/roadmap.md
+    about: この先どこへ向かうか（Phase 9 以降、PoS、zk）。

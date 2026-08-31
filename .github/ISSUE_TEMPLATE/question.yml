@@ -1,0 +1,40 @@
+name: 分からないところがある
+description: 教材の説明が通じていない箇所を教えてください
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        「分からない」は教材側の不足です。遠慮なくどうぞ。
+  - type: dropdown
+    id: phase
+    attributes:
+      label: どのフェーズ / 課題ですか
+      options:
+        - Phase 1 ハッシュ関数
+        - Phase 2 楕円曲線 secp256k1
+        - Phase 3 ECDSA
+        - Phase 4 マークル木
+        - Phase 5 UTXO とトランザクション
+        - Phase 6 ブロックと PoW
+        - Phase 7 最長鎖と合意
+        - Phase 8 P2P とノード間の伝播
+        - EXERCISES.md の課題
+        - Web UI / Docker
+        - その他
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: どこで止まりましたか
+      placeholder: |
+        例) chain/ecdsa.py の verify で u1*G + u2*Q が R になる導出が追えない
+    validations:
+      required: true
+  - type: textarea
+    id: tried
+    attributes:
+      label: 試したこと（あれば）
+      placeholder: |
+        例) python chain/ecdsa.py は動いた。docstring の 2 行の式変形で詰まった。

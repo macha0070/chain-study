@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# 教材なので、CI 自体も「読めば分かる」大きさに保つ。
+# やっていることは 3 つだけ: テスト / 通し実行 / コンテナが本当に動くか。
+
+jobs:
+  test:
+    name: unittest (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: 依存がないことを確認する
+        # 追加パッケージを入れないのがこのリポジトリの方針。
+        # requirements.txt が生えていたら方針が崩れた合図なので落とす。
+        run: |
+          test ! -f requirements.txt || (echo "requirements.txt があります。標準ライブラリのみの方針が崩れています" && exit 1)
+          test ! -f pyproject.toml   || (echo "pyproject.toml があります" && exit 1)
+      - name: テスト（統計テスト込み）
+        env:
+          CHAIN_STUDY_FAST: "0"
+        run: python -m unittest discover -s tests -v
+
+  demo:
+    name: 通し実行
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: 自己確認（各フェーズの到達判定）
+        run: python chain/demo.py --check
+      - name: 図を再生成できることを確認する
+        run: python tools/render_svg.py --out /tmp/figs
+
+  docker:
+    name: コンテナで攻撃が成功するか
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: イメージをビルド
+        run: docker build -t chain-study:ci .
+      - name: 起動してヘルスチェックを待つ
+        run: |
+          docker run -d --name lab -p 8000:8000 chain-study:ci
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:8000/api/health > /dev/null; then
+              echo "起動しました"; exit 0
+            fi
+            sleep 1
+          done
+          echo "起動しませんでした"; docker logs lab; exit 1
+      - name: API 越しに二重支払い攻撃を成功させる
+        # 「ドキュメントに書いた攻撃が本当に成功するか」を CI で担保する。
+        # 教材の主張が壊れたら赤くなってほしい。
+        run: python .github/scripts/smoke.py
+      - name: 後片付け
+        if: always()
+        run: docker rm -f lab || true
